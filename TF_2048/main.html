@@ -5,124 +5,41 @@
 <title>2048</title>
 <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
 <script type="text/javascript" src="js/Tween.js"></script>
+<script type="text/javascript" src="js/TF2048.js"></script>
 <script type="text/javascript">
-
-//2048 Class
-var O2048 = function(_canvas, _tileCnt){
-	
-	/* 타일 갯수 유효성 검사  */
-	if(false){
-		return;
-	}
-	
-	/* private 변수  */
-	
-	//캔버스 객체
-	var canvas = _canvas;
-	
-	//캔버스 컨텍스트
-	var ctx = canvas.getContext("2d");
-	
-	/* 리사이징 이벤트  */
-	var fnResize = function(){
-		canvas.height = $(window).height();
-	 	canvas.width = $(window).width();
-	}
-	fnResize();
-	$(window).resize(fnResize);
-	
-	//캔버스 한 변의 길이
-	var canvasPx = null;
-	if(canvas.height > canvas.width){
-		canvasPx = canvas.width;
-	}else{
-		canvasPx = canvas.height;
-	}
-	
-	//캔버스 기준점x
-	var canvasGx = ($(window).width()-canvasPx) /2;
-	
-	//캔버스 기준점y
-	var canvasGy = ($(window).height()-canvasPx) /2;
-	
-	//타일 총 갯수
-	var tileCnt = _tileCnt;
-	
-	//타일 한줄의 갯수
-	var tileRowCnt = Math.sqrt( tileCnt );
-	
-	//타일 한 변의 길이
-	var tilePx = canvasPx /tileRowCnt;
-	
-	//2048 내부 타일 객체
-	var Tile = function(_gx, _gy){
-		//기준점 gx, gy
-		this.gx = _gx;
-		this.gy = _gy;
-		//타일의 숫자
-		this.number = 2;
-	}
-	Tile.prototype.draw = function(){
-		//타일의 숫자가 0이면 그리지 않음
-		if(this.number != 0){
-			ctx.save();
-			ctx.translate(this.gx, this.gy);
-			ctx.fillStyle = "rgb(0, 0, 0)";
-			ctx.fillRect(0, 0, tilePx, tilePx);
-			ctx.fillStyle = "rgb(255, 255, 255)";
-			ctx.textAlign = "center";//text Align
-			ctx.textBaseline = 'middle';//vertical Align
-			ctx.font = 'bold '+tilePx/2+' sans-serif';
-			ctx.translate(tilePx/2, tilePx/2 );
-			ctx.fillText(this.number, 0,0);
-			ctx.restore();
-		}
-	};
-	
-	//타일 좌표 배열
-	this.tileCoordArr = new Array();
-	for(var i=0; i<tileRowCnt; i++){
-		this.tileCoordArr[i] = new Array();
-		for(var j=0; j<tileRowCnt; j++){
-			this.tileCoordArr[i][j] = new Tile( canvasGx + (i * tilePx), canvasGy + (j * tilePx) );
-			this.tileCoordArr[i][j].draw();
-		}
-	}
-	
-	return {
-		getCanvas: function(){
-			return canvas;
-		},
-		getCtx: function(){
-			return ctx;
-		},
-		getTileCnt: function(){
-			return tileCnt
-		},
-		tileCoordArr: this.tileCoordArr
-	};
-	
-}
-
-
 
 
 //2048 객체
-var o2048 = null;
+var tf2048 = null;
 $(document).ready(function(){
 
 	//타일의 갯수
-	var tileCnt = 9;
+	var tileCnt = 16;
 	//타겟 DIV 객체
 	var canvas = document.getElementById("canvas");
 	//2048 객체
-	o2048 = new O2048(canvas, tileCnt);
+	tf2048 = new TF2048(canvas, tileCnt);
+	
+	$(window).keydown(function(e){
+		if(e.keyCode == 37){
+			tf2048.toLeft();	
+		}
+		if(e.keyCode == 38){
+			tf2048.toUp();	
+		}
+		if(e.keyCode == 39){
+			tf2048.toRight();	
+		}
+		if(e.keyCode == 40){
+			tf2048.toDown();	
+		}
+	});
 	
 });
 
 </script>
 </head>
 <body style="margin: 0; padding: 0; overflow: hidden;">
-<canvas id="canvas"></canvas>
+<canvas id="canvas" style="background-color: #ffc107"></canvas>
 </body>
 </html>
