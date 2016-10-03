@@ -22,7 +22,7 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 			ctx.fillStyle = "rgb(255, 255, 255)";
 			ctx.textAlign = "center";//text Align
 			ctx.textBaseline = 'middle';//vertical Align
-			ctx.font = 'bold '+tilePx/2+' sans-serif';
+			ctx.font = 'bold '+tilePx/2+'px sans-serif';
 			ctx.translate(tilePx/2, tilePx/2 );
 			ctx.fillText(this.number, 0,0);
 			ctx.restore();
@@ -211,21 +211,6 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 		
 	}, 20);
 	
-	//윈도우 resizing 이벤트
-	$(window).resize(function(){
-		init();
-		for(var i=0; i<tileRowCnt; i++){
-			for(var j=0; j<tileRowCnt; j++){
-				backGroundTileArr[i][j].gx = Util.getTileGx(i);
-				backGroundTileArr[i][j].gy = Util.getTileGy(j);
-				if(tileArr[i][j] != null){
-					tileArr[i][j].gx = Util.getTileGx(i);
-					tileArr[i][j].gy = Util.getTileGy(j);
-				}
-			}
-		}
-	});
-	
 	//사용자가 접근 가능 한 변수 및 함수 정의 
 	return {
 		toLeft: function(){
@@ -354,6 +339,20 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 							Util.moveTile(x,y,ex,ey);
 							
 						}
+					}
+				}
+			}
+		},
+		//리사이징
+		resize: function(){
+			init();
+			for(var i=0; i<tileRowCnt; i++){
+				for(var j=0; j<tileRowCnt; j++){
+					backGroundTileArr[i][j].gx = Util.getTileGx(i);
+					backGroundTileArr[i][j].gy = Util.getTileGy(j);
+					if(tileArr[i][j] != null){
+						tileArr[i][j].gx = Util.getTileGx(i);
+						tileArr[i][j].gy = Util.getTileGy(j);
 					}
 				}
 			}
