@@ -13,12 +13,20 @@
 var tf2048 = null;
 $(document).ready(function(){
 
+	windowResize();
+	
 	//타일의 갯수
 	var tileCnt = 16;
 	//타겟 DIV 객체
 	var canvas = document.getElementById("canvas");
+	//옵션
+	var option = {
+		"border": 9,
+		"border-color": "#ffc107",
+		"blank-color": "#eeeeee"
+	};
 	//2048 객체
-	tf2048 = TF2048(canvas, tileCnt);
+	tf2048 = TF2048(canvas, tileCnt, option);
 	
 	//키 이벤트
 	$(window).keydown(function(e){
@@ -121,10 +129,13 @@ $(document).ready(function(){
 			$("#controller").css({left: "calc( 50% - "+targetCoord/2+"px )", top: "calc( 50% - "+targetCoord/2+"px )"});
 			
 		}
-	});
-	
+	}).resize(windowResize);
 });
 
+//윈도우 리사이즈 이벤트
+function windowResize(){
+	$("#canvas").attr({width: window.innerWidth, height: window.innerHeight});
+}
 </script>
 </head>
 <body style="margin: 0; padding: 0; overflow: hidden;">

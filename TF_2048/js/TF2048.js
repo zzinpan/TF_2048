@@ -1,52 +1,5 @@
 //2048 Class
-var TF2048 = function(_canvas, _tileCnt){
-	
-	/* 타일 갯수 유효성 검사  */
-	if(false){
-		return;
-	}
-	
-	/* private 변수  */
-	
-	//캔버스 객체
-	var canvas = _canvas;
-	
-	//캔버스 컨텍스트
-	var ctx = canvas.getContext("2d");
-	
-	/* 리사이징 이벤트  */
-	var fnResize = function(){
-		canvas.height = $(window).height();
-	 	canvas.width = $(window).width();
-	}
-	fnResize();
-	$(window).resize(fnResize);
-	
-	//border
-	var border = 10;
-	
-	//캔버스 한 변의 길이
-	var canvasPx = null;
-	if(canvas.height > canvas.width){
-		canvasPx = canvas.width;
-	}else{
-		canvasPx = canvas.height;
-	}
-	
-	//캔버스 기준점x
-	var canvasGx = ($(window).width()-canvasPx) /2;
-	
-	//캔버스 기준점y
-	var canvasGy = ($(window).height()-canvasPx) /2;
-	
-	//타일 총 갯수
-	var tileCnt = _tileCnt;
-	
-	//타일 한줄의 갯수
-	var tileRowCnt = Math.sqrt( tileCnt );
-	
-	//타일 한 변의 길이
-	var tilePx = canvasPx /tileRowCnt - border*2;
+var TF2048 = function(_canvas, _tileCnt, _option){
 	
 	//2048 내부 타일 Class
 	var Tile = function(_gx, _gy){
@@ -58,7 +11,7 @@ var TF2048 = function(_canvas, _tileCnt){
 	}
 	Tile.prototype.draw = function(){
 		ctx.save();
-		ctx.fillStyle = "#eeeeee";
+		ctx.fillStyle = blankColor;
 		this.fillShape();
 		ctx.restore();
 		//타일의 숫자가 0이면 그리지 않음
@@ -94,12 +47,98 @@ var TF2048 = function(_canvas, _tileCnt){
 		ctx.fill();
 	}
 	
-	//타일의 gx, gy를 계산
-	function getTileGx(i){
-		return border+border/2 + canvasGx + (i+1) * border + (i * tilePx);
+	
+	
+	
+	/* 타일 갯수 유효성 검사  */
+	if(false){
+		return;
 	}
-	function getTileGy(j){
-		return border+border/2 + canvasGy + (j+1) * border + (j * tilePx);
+	
+	//캔버스 객체
+	var canvas = _canvas;
+	
+	//캔버스 컨텍스트
+	var ctx = canvas.getContext("2d");
+	
+	/* style */
+	_option = _option == null ? {"border": null, "border-color": null, "blank-color": null} : _option;
+	
+	//border
+	var border = _option["border"] == null ? 9 : _option["border"];
+	var bordrColor = _option["border-color"] == null ? "#000000" : _option["border-color"];
+	var blankColor = _option["blank-color"] == null ? "#ffffff" : _option["blank-color"];
+	
+	//캔버스 한 변의 길이
+	var canvasPx;
+	
+	//캔버스 기준점x
+	var canvasGx;
+	
+	//캔버스 기준점y
+	var canvasGy;
+	
+	//타일 총 갯수
+	var tileCnt = _tileCnt;
+	
+	//타일 한줄의 갯수
+	var tileRowCnt = Math.sqrt( tileCnt );
+	
+	//타일 한 변의 길이
+	var tilePx;
+	
+	/* 계산에 필요한 init */
+	function init(){
+		//캔버스 한 변의 길이
+		if(canvas.height > canvas.width){
+			canvasPx = canvas.width-border*2;
+		}else{
+			canvasPx = canvas.height-border*2;
+		}
+		
+		//캔버스 기준점x
+		canvasGx = (canvas.width - canvasPx) /2;
+		
+		//캔버스 기준점y
+		canvasGy = (canvas.height - canvasPx) /2;
+		
+		//타일 한 변의 길이
+		tilePx = canvasPx /tileRowCnt -border*2;
+	}
+	init();
+	
+	//Util 모음
+	var Util = {
+			
+			//타일의 gx, gy를 계산
+			getTileGx: function(i){
+				return canvasGx + tilePx*i +border*i*2 +border;
+			},
+			
+			getTileGy: function(j){
+				return canvasGy + tilePx*j +border*j*2 +border;
+			},
+			
+			//이동할 타일(기존x, 기존y, 이동할x 이동할y)
+			moveTile: function(x,y,ex,ey){
+				//object는 call by reference이므로 가능한 코딩
+				
+				//이동시킬 타일
+				var movingTile = tileArr[x][y];
+				
+				//기존의 타일이 있던 곳은 null 처리
+				tileArr[x][y] = null;
+				
+				//이동할 곳에 타일을 저장
+				tileArr[ex][ey] = movingTile;
+				
+				//애니메이션 처리
+				var tween = new TWEEN.Tween(movingTile)
+				.to( {gx: Util.getTileGx(ex), gy: Util.getTileGy(ey)} , 500 )
+				.easing( TWEEN.Easing.Quintic.InOut )
+				tween.start();
+			}
+			
 	}
 	
 	//a1 + (n-1)d
@@ -108,7 +147,7 @@ var TF2048 = function(_canvas, _tileCnt){
 	for(var i=0; i<tileRowCnt; i++){
 		backGroundTileArr[i] = new Array();
 		for(var j=0; j<tileRowCnt; j++){
-			backGroundTileArr[i][j] = new Tile( getTileGx(i), getTileGy(j) );
+			backGroundTileArr[i][j] = new Tile( Util.getTileGx(i), Util.getTileGy(j) );
 			backGroundTileArr[i][j].draw();
 		}
 	}
@@ -134,9 +173,9 @@ var TF2048 = function(_canvas, _tileCnt){
 	}
 	
 	//최초 타일 생성
-	tileArr[randomTileIdx1.x][randomTileIdx1.y] = new Tile( getTileGx(randomTileIdx1.x), getTileGy(randomTileIdx1.y) );
+	tileArr[randomTileIdx1.x][randomTileIdx1.y] = new Tile( Util.getTileGx(randomTileIdx1.x), Util.getTileGy(randomTileIdx1.y) );
 	tileArr[randomTileIdx1.x][randomTileIdx1.y].number = 2;
-	tileArr[randomTileIdx2.x][randomTileIdx2.y] = new Tile( getTileGx(randomTileIdx2.x), getTileGy(randomTileIdx2.y) );
+	tileArr[randomTileIdx2.x][randomTileIdx2.y] = new Tile( Util.getTileGx(randomTileIdx2.x), Util.getTileGy(randomTileIdx2.y) );
 	tileArr[randomTileIdx2.x][randomTileIdx2.y].number = 2;
 	
 	//주기적 렌더링
@@ -144,11 +183,11 @@ var TF2048 = function(_canvas, _tileCnt){
 		
 		ctx.clearRect(canvasGx, canvasGy, canvasPx, canvasPx);
 		
-		//2048 background fill
+		//2048 borderColor
 		ctx.save();
-		ctx.fillStyle = "#ffc107";
+		ctx.fillStyle = bordrColor;
 		ctx.translate(canvasGx, canvasGy);
-		ctx.fillRect(0 , 0, canvasPx, canvasPx);
+		ctx.fillRect(-border, -border, canvasPx+border*2, canvasPx+border*2);
 		ctx.restore();
 		
 		//background tiles
@@ -172,27 +211,22 @@ var TF2048 = function(_canvas, _tileCnt){
 		
 	}, 20);
 	
-	//이동할 타일(기존x, 기존y, 이동할x 이동할y)
-	function moveTile(x,y,ex,ey){
-		//object는 call by reference이므로 가능한 코딩
-		
-		//이동시킬 타일
-		var movingTile = tileArr[x][y];
-		
-		//기존의 타일이 있던 곳은 null 처리
-		tileArr[x][y] = null;
-		
-		//이동할 곳에 타일을 저장
-		tileArr[ex][ey] = movingTile;
-		
-		//애니메이션 처리
-		var tween = new TWEEN.Tween(movingTile)
-		.to( {gx: getTileGx(ex), gy: getTileGy(ey)} , 500 )
-		.easing( TWEEN.Easing.Quintic.InOut )
-		tween.start();
-	}
+	//윈도우 resizing 이벤트
+	$(window).resize(function(){
+		init();
+		for(var i=0; i<tileRowCnt; i++){
+			for(var j=0; j<tileRowCnt; j++){
+				backGroundTileArr[i][j].gx = Util.getTileGx(i);
+				backGroundTileArr[i][j].gy = Util.getTileGy(j);
+				if(tileArr[i][j] != null){
+					tileArr[i][j].gx = Util.getTileGx(i);
+					tileArr[i][j].gy = Util.getTileGy(j);
+				}
+			}
+		}
+	});
 	
-	//사용자가 접근 가능 한 변수 및 함수 정의
+	//사용자가 접근 가능 한 변수 및 함수 정의 
 	return {
 		toLeft: function(){
 			//왼쪽에 타일이 존재하는가?
@@ -220,7 +254,7 @@ var TF2048 = function(_canvas, _tileCnt){
 								}
 								ex--;
 							}
-							moveTile(x,y,ex,ey);
+							Util.moveTile(x,y,ex,ey);
 							
 						}
 					}
@@ -252,7 +286,7 @@ var TF2048 = function(_canvas, _tileCnt){
 								}
 								ey--;
 							}
-							moveTile(x,y,ex,ey);
+							Util.moveTile(x,y,ex,ey);
 							
 						}
 					}
@@ -285,7 +319,7 @@ var TF2048 = function(_canvas, _tileCnt){
 								}
 								ex++;
 							}
-							moveTile(x,y,ex,ey);
+							Util.moveTile(x,y,ex,ey);
 							
 						}
 					}
@@ -317,14 +351,13 @@ var TF2048 = function(_canvas, _tileCnt){
 								}
 								ey++;
 							}
-							moveTile(x,y,ex,ey);
+							Util.moveTile(x,y,ex,ey);
 							
 						}
 					}
 				}
 			}
-		},
-		getTileArr: tileArr//개발용으로 표시
+		}
 	};
 	
 }
