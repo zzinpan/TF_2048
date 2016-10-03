@@ -58,13 +58,13 @@ var TF2048 = function(_canvas, _tileCnt){
 	}
 	Tile.prototype.draw = function(){
 		ctx.save();
-		ctx.fillStyle = "rgb(255, 255, 255)";
+		ctx.fillStyle = "#eeeeee";
 		this.fillShape();
 		ctx.restore();
 		//타일의 숫자가 0이면 그리지 않음
 		if(this.number != 0){
 			ctx.save();
-			ctx.fillStyle = "#ffebee";	
+			ctx.fillStyle = "#ffcdd2";	
 			this.fillShape();
 			ctx.fillStyle = "rgb(255, 255, 255)";
 			ctx.textAlign = "center";//text Align
@@ -172,109 +172,159 @@ var TF2048 = function(_canvas, _tileCnt){
 		
 	}, 20);
 	
+	//이동할 타일(기존x, 기존y, 이동할x 이동할y)
+	function moveTile(x,y,ex,ey){
+		//object는 call by reference이므로 가능한 코딩
+		
+		//이동시킬 타일
+		var movingTile = tileArr[x][y];
+		
+		//기존의 타일이 있던 곳은 null 처리
+		tileArr[x][y] = null;
+		
+		//이동할 곳에 타일을 저장
+		tileArr[ex][ey] = movingTile;
+		
+		//애니메이션 처리
+		var tween = new TWEEN.Tween(movingTile)
+		.to( {gx: getTileGx(ex), gy: getTileGy(ey)} , 500 )
+		.easing( TWEEN.Easing.Quintic.InOut )
+		tween.start();
+	}
+	
+	//사용자가 접근 가능 한 변수 및 함수 정의
 	return {
 		toLeft: function(){
-			var updateTileArr = new Array();
+			//왼쪽에 타일이 존재하는가?
+			function existLeftTile(x, y){
+				if( tileArr[x-1][y] != null ){
+					return true;
+				}
+				return false;
+			}
+			
 			for(var x=0; x<tileRowCnt; x++){
 				for(var y=0; y<tileRowCnt; y++){
 					//타일이 존재 한다면
 					if(tileArr[x][y] != null){
-						//가장 왼쪽 타일이 아니라면
-						if(x != 0){
-							var coord = {sx: x, sy: y, ex: 0, ey: y};
-							//현재 x열의 가장 왼쪽 타일 찾기
-							for(var _x=x-1; -1<_x; _x--){
-								if( tileArr[_x][y] != null ){
-									coord.ex = _x+1;
+						//왼쪽이 벽이 아니고, 바로 왼쪽에 타일이 없는 경우
+						if( x != 0 && !existLeftTile(x,y) ){
+							
+							var ex = x-1;
+							var ey = y;
+							
+							//이동할 곳을 좌표 지정
+							while(true){
+								if( ex == 0 || existLeftTile(ex,ey) ){
 									break;
 								}
+								ex--;
 							}
-							//TODO 붙어있을 경우 처리가 안됨
-							updateTileArr.push(coord);
-							var tween = new TWEEN.Tween(tileArr[x][y])
-							.to( {gx: getTileGx(coord.ex)} , 500 )
-							.easing( TWEEN.Easing.Quintic.InOut )
-							tween.start();
+							moveTile(x,y,ex,ey);
+							
 						}
 					}
 				}
-			}
-			for(var i=0; i<updateTileArr.length; i++){
-				var sx = updateTileArr[i].sx;
-				var sy = updateTileArr[i].sy;
-				var ex = updateTileArr[i].ex;
-				var ey = updateTileArr[i].ey;
-				tileArr[ex][ey] = tileArr[sx][sy];
-				tileArr[sx][sy] = null;
 			}
 		},
 		toUp: function(){
-			var updateTileArr = new Array();
+			//위쪽에 타일이 존재하는가?
+			function existUpTile(x, y){
+				if( tileArr[x][y-1] != null ){
+					return true;
+				}
+				return false;
+			}
 			for(var x=0; x<tileRowCnt; x++){
 				for(var y=0; y<tileRowCnt; y++){
+					//타일이 존재 한다면
 					if(tileArr[x][y] != null){
-						if(y != 0){
-							updateTileArr.push({x: x, y: y});
-							var tween = new TWEEN.Tween(tileArr[x][y])
-							.to( {gy: getTileGy(y-1)} , 500 )
-							.easing( TWEEN.Easing.Quintic.InOut )
-							tween.start();
+						//위쪽이 벽이 아니고, 바로 위쪽에 타일이 없는 경우
+						if( y != 0 && !existUpTile(x,y) ){
+							
+							var ex = x;
+							var ey = y-1;
+							
+							//이동할 곳을 좌표 지정
+							while(true){
+								if( ey == 0 || existUpTile(ex,ey) ){
+									break;
+								}
+								ey--;
+							}
+							moveTile(x,y,ex,ey);
+							
 						}
 					}
 				}
-			}
-			for(var i=0; i<updateTileArr.length; i++){
-				var x = updateTileArr[i].x;
-				var y = updateTileArr[i].y;
-				tileArr[x][y-1] = tileArr[x][y];
-				tileArr[x][y] = null;
 			}
 		},
 		toRight: function(){
-			var updateTileArr = new Array();
-			for(var x=0; x<tileRowCnt; x++){
+			//오른쪽에 타일이 존재하는가?
+			function existRightTile(x, y){
+				if( tileArr[x+1][y] != null ){
+					return true;
+				}
+				return false;
+			}
+			
+			for(var x=tileRowCnt-1; -1<x; x--){
 				for(var y=0; y<tileRowCnt; y++){
+					//타일이 존재 한다면
 					if(tileArr[x][y] != null){
-						if(x != tileRowCnt-1){
-							updateTileArr.push({x: x, y: y});
-							var tween = new TWEEN.Tween(tileArr[x][y])
-							.to( {gx: getTileGx(x+1)} , 500 )
-							.easing( TWEEN.Easing.Quintic.InOut )
-							tween.start();
+						//왼쪽이 벽이 아니고, 바로 왼쪽에 타일이 없는 경우
+						if( x != tileRowCnt-1 && !existRightTile(x,y) ){
+							
+							var ex = x+1;
+							var ey = y;
+							
+							//이동할 곳을 좌표 지정
+							while(true){
+								if( ex == tileRowCnt-1 || existRightTile(ex,ey) ){
+									break;
+								}
+								ex++;
+							}
+							moveTile(x,y,ex,ey);
+							
 						}
 					}
 				}
-			}
-			for(var i=updateTileArr.length-1; -1<i; i--){
-				var x = updateTileArr[i].x;
-				var y = updateTileArr[i].y;
-				tileArr[x+1][y] = tileArr[x][y];
-				tileArr[x][y] = null;
 			}
 		},
 		toDown: function(){
-			var updateTileArr = new Array();
+			//아래쪽에 타일이 존재하는가?
+			function existDownTile(x, y){
+				if( tileArr[x][y+1] != null ){
+					return true;
+				}
+				return false;
+			}
 			for(var x=0; x<tileRowCnt; x++){
-				for(var y=0; y<tileRowCnt; y++){
+				for(var y=tileRowCnt-1; -1<y; y--){
+					//타일이 존재 한다면
 					if(tileArr[x][y] != null){
-						if(y != tileRowCnt-1){
-							updateTileArr.push({x: x, y: y});
-							var tween = new TWEEN.Tween(tileArr[x][y])
-							.to( {gy: getTileGy(y+1)} , 500 )
-							.easing( TWEEN.Easing.Quintic.InOut )
-							tween.start();
+						//위쪽이 벽이 아니고, 바로 위쪽에 타일이 없는 경우
+						if( y != tileRowCnt-1 && !existDownTile(x,y) ){
+							
+							var ex = x;
+							var ey = y+1;
+							
+							//이동할 곳을 좌표 지정
+							while(true){
+								if( ey == tileRowCnt-1 || existDownTile(ex,ey) ){
+									break;
+								}
+								ey++;
+							}
+							moveTile(x,y,ex,ey);
+							
 						}
 					}
 				}
 			}
-			for(var i=updateTileArr.length-1; -1<i; i--){
-				var x = updateTileArr[i].x;
-				var y = updateTileArr[i].y;
-				tileArr[x][y+1] = tileArr[x][y];
-				tileArr[x][y] = null;
-			}
 		},
-		getTileArr: tileArr
+		getTileArr: tileArr//개발용으로 표시
 	};
 	
 }
