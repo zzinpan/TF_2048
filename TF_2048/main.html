@@ -14,7 +14,7 @@ var tf2048 = null;
 $(document).ready(function(){
 
 	//타일의 갯수
-	var tileCnt = 16;
+	var tileCnt = 49;
 	//타겟 DIV 객체
 	var canvas = document.getElementById("canvas");
 	//옵션
@@ -88,11 +88,6 @@ $(document).ready(function(){
 				return;
 			}
 
-			//움직인 값이 200px 이상이더라도, 화살표 이미지 크기 고정
-			if( absX > 200 || absY > 200){
-				return;		
-			}
-			
 			//상하로 움직였는지, 좌우로 움직였는지 여부
 			if( absX > absY ){
 				//우로 이동한 경우
@@ -140,12 +135,12 @@ function windowResize(){
 </script>
 </head>
 <body style="margin: 0; padding: 0; overflow: hidden;">
-<canvas id="canvas" style="background-color: #ff7043;"></canvas>
-<div id="controller" style=" position: absolute; z-index: 9999; left: 0; top: 0; pointer-events: none; text-align: center; vertical-align: middle; display: none; opacity: 0.5;">
-	<img id="leftImg" style="display: none; background-color: white; border-radius: 200px;" src="img/left.png">
-	<img id="upImg" style="display: none; background-color: white; border-radius: 200px;" src="img/up.png">
-	<img id="rightImg" style="display: none; background-color: white; border-radius: 200px;" src="img/right.png">
-	<img id="downImg" style="display: none; background-color: white; border-radius: 200px;" src="img/down.png">
-</div>
+	<canvas id="canvas" style="background-color: #ff7043;"></canvas>
+	<div id="controller" style=" position: absolute; z-index: 9999; left: 0; top: 0; pointer-events: none; text-align: center; vertical-align: middle; display: none; opacity: 0.5;">
+		<img id="leftImg" style="display: none; background-color: white; border-radius: 200px;" src="img/left.png">
+		<img id="upImg" style="display: none; background-color: white; border-radius: 200px;" src="img/up.png">
+		<img id="rightImg" style="display: none; background-color: white; border-radius: 200px;" src="img/right.png">
+		<img id="downImg" style="display: none; background-color: white; border-radius: 200px;" src="img/down.png">
+	</div>
 </body>
 </html>

@@ -46,6 +46,7 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 		Board.ctx.stroke();
 		Board.ctx.fill();
 	}
+	
 	//타일 숫자 증가
 	Tile.prototype.numberIncrease = function(){
 		//신규 타일일 경우
@@ -78,13 +79,14 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 			canvasGy: 0, //캔버스 기준점y
 			backGroundTileArr: null, //배경이 되는 타일 배열
 			tileArr: null, //실제 타일 배열
-			isTileMoving: false, //타일 이동 여부
+			eventWork: true, //이벤트 동작 여부
 			tileCnt: _tileCnt, //타일 총 갯수
 			tileRowCnt: Math.sqrt( _tileCnt ), //타일 한 줄의 갯 수,
 			tilePx: 0, //타일의 한 변의 길이
 
 			
 			tileTodo: {
+				isTileMoved: false,
 				arr: null,
 				init: function(){
 					//애니메이션용 임시 타일 배열 생성
@@ -120,34 +122,81 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 						sgy: Util.getTileGy(y),
 						egx: Util.getTileGx(ex),
 						egy: Util.getTileGy(ey),
-						isRemove: false,
 						number: Board.tileArr[x][y].number
 					};
 					return Board.tileTodo.arr[x][y];
 				},
-				todo: function(){
-					Board.isTileMoving = true;
+				todo: function(direction){
 					
-					//애니메이션 처리
-					for(var x=0; x<Board.tileRowCnt; x++){
-						for(var y=0; y<Board.tileRowCnt; y++){
-							var todo = Board.tileTodo.arr[x][y];
-							if(todo != null){
-								var _x = x;
-								var _y = y;
-								var tween = new TWEEN.Tween(Board.tileArr[_x][_y])
+					//타일 이동중에 이벤트 제어
+					Board.eventWork = false;
+					
+					//타일 이동 여부
+					var isTileMove = false;
+					
+					//애니메이션
+					function animation(x, y){
+						if(Board.tileTodo.arr[x][y] != null){
+							
+							//즉시 실행 함수로 x,y변수와 onComplete 간 클로저 방지
+							(function(x, y){
+								var todo = Board.tileTodo.arr[x][y];
+								if(todo.ex != x || todo.ey != y){
+									isTileMove = true;
+								}
+								Board.tileArr[x][y].number = todo.number;
+								var tween = new TWEEN.Tween(Board.tileArr[x][y])
 								.to( {gx: todo.egx, gy: todo.egy} , 500 )
 								.easing( TWEEN.Easing.Quintic.InOut )
 								.onComplete(function(){
-									Board.tileArr[_x][_y].number = todo.number;
-									if(todo.isRemove){
-										Board.tileArr[_x][_y] = null;
+									//타일 변화가 있는 경우에만
+									if(todo.ex != x || todo.ey != y){
+										var movedTile = Board.tileArr[x][y];
+										Board.tileArr[todo.ex][todo.ey] = movedTile;
+										Board.tileArr[x][y] = null;
 									}
 								});
 								tween.start();
-							}
+							})(x, y);
 						}
 					}
+					
+					if(direction == "LEFT"){
+						for(var x=0; x<Board.tileRowCnt; x++){
+							for(var y=0; y<Board.tileRowCnt; y++){
+								animation(x, y);
+							}
+						}
+					}else if(direction == "UP"){
+						for(var x=0; x<Board.tileRowCnt; x++){
+							for(var y=0; y<Board.tileRowCnt; y++){
+								animation(x, y);
+							}
+						}
+					}else if(direction == "RIGHT"){
+						for(var x=Board.tileRowCnt-1; -1<x; x--){
+							for(var y=Board.tileRowCnt-1; -1<y; y--){
+								animation(x, y);
+							}
+						}
+					}else if(direction == "DOWN"){
+						for(var x=Board.tileRowCnt-1; -1<x; x--){
+							for(var y=Board.tileRowCnt-1; -1<y; y--){
+								animation(x, y);
+							}
+						}
+					} 
+					
+					//타일의 이동이 있었으면 신규타일 추가
+					if(isTileMove){
+						setTimeout(function(){
+							Board.newTile();
+							Board.eventWork = true;
+						}, 510);
+					}else{
+						Board.eventWork = true;
+					}
+					
 				}
 			}, 
 			
@@ -209,10 +258,10 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 				
 				//타일이 존재하지 않는 좌표 배열
 				var nullTileArr = new Array();
-				for(var x=0; x<Board.tileRowCnt; x++){
-					for(var y=0; y<Board.tileRowCnt; y++){
-						if(Board.tileArr[x][y] == null){
-							nullTileArr.push({x: x, y: y});
+				for(var q=0; q<Board.tileRowCnt; q++){
+					for(var w=0; w<Board.tileRowCnt; w++){
+						if(Board.tileArr[q][w] == null){
+							nullTileArr.push({x: q, y: w});
 						}
 					}
 				}
@@ -223,37 +272,10 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 				//타일 생성
 				Board.tileArr[randomCoord.x][randomCoord.y] = new Tile( Util.getTileGx(randomCoord.x), Util.getTileGy(randomCoord.y) );
 				Board.tileArr[randomCoord.x][randomCoord.y].numberIncrease();
+				//TODO 신규 타일 축소에서 확대
+//				Board.tileArr[randomCoord.x][randomCoord.y].draw = function(){}
 				
 			},
-			
-			existLeftTile: function(x, y){
-				if( Board.tileArr[x-1][y] != null ){
-					return true;
-				}
-				return false;
-			},
-			
-			existUpTile: function(x, y){
-				if( Board.tileArr[x][y-1] != null ){
-					return true;
-				}
-				return false;
-			},
-			
-			existRightTile: function(x, y){
-				if( Board.tileArr[x+1][y] != null ){
-					return true;
-				}
-				return false;
-			},
-			
-			existDownTile: function(x, y){
-				if( Board.tileArr[x][y+1] != null ){
-					return true;
-				}
-				return false;
-			},
-			
 			
 			draw: function(){
 				Board.ctx.clearRect(Board.canvasGx, Board.canvasGy, Board.canvasPx, Board.canvasPx);
@@ -278,9 +300,6 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 						if( Board.tileArr[i][j] == null ){
 							continue;
 						}
-						if( Board.tileArr[i][j].visible == false ){
-							continue;
-						}
 						Board.tileArr[i][j].draw();
 					}
 				}
@@ -292,7 +311,6 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 	
 	//Util 모음
 	var Util = {
-			
 			//타일의 gx, gy를 계산
 			getTileGx: function(i){
 				return Board.canvasGx + Board.tilePx*i + Board.style.border*i*2 +Board.style.border;
@@ -301,23 +319,6 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 			getTileGy: function(j){
 				return Board.canvasGy + Board.tilePx*j + Board.style.border*j*2 +Board.style.border;
 			},
-			
-			//이동할 타일(기존x, 기존y, 이동할x 이동할y)
-			moveTile: function(){
-				
-				Board.isTileMoving = true;
-				
-				
-				//애니메이션 처리
-				var tween = new TWEEN.Tween(Board.movingTempTileArr[x][y])
-				.to( {gx: Util.getTileGx(ex), gy: Util.getTileGy(ey)} , 500 )
-				.easing( TWEEN.Easing.Quintic.InOut )
-				.onComplete(function(){
-					Board.tileArr[ex][ey].visible = true;
-				});
-				tween.start();
-			}
-			
 	}
 	
 	Board.init();
@@ -334,7 +335,7 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 		toLeft: function(){
 			
 			//타일이 이동중이라면, 이벤트 무시
-			if(Board.isTileMoving){
+			if(Board.eventWork == false){
 				return;
 			}
 			
@@ -350,6 +351,7 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 					
 					//왼쪽이 벽인가?
 					if( x == 0 ){
+						var newTodo = Board.tileTodo.add(x, y, x, y);
 						continue;
 					}
 					
@@ -366,7 +368,7 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 							Board.tileTodo.add(x, y, ex, ey); 
 							break;
 						}
-
+						
 						//이동할 곳에 타일이 있는 경우
 						if( todo != null ){
 							
@@ -374,113 +376,224 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 							if( Board.tileArr[x][y].number == todo.number ){
 								var newTodo = Board.tileTodo.add(x, y, ex, ey);
 								newTodo.number *= 2;
-								newTodo.isRemove = true;
+								if(Board.tileArr[ex][ey] != null){
+									Board.tileArr[ex][ey].numberIncrease();
+								}
 								
 							//숫자가 다른 경우 && 가장 오른쪽이 아닌 경우
-							}else if(x != tileRowCnt-1){
-								Board.tileTodo.add(x, y, ex+1, ey);
+							}else{
+								var _ex = ex+1;
+								_ex = _ex > Board.tileRowCnt-1 ? _ex-1 : _ex;
+								Board.tileTodo.add(x, y, _ex, ey);
 							}
 							break;
 						}
 						
 						ex--;
 					}
-						
-					Board.tileTodo.todo();
-					
 				}
+				
 			}
+			 
+			Board.tileTodo.todo("LEFT");
 			
 		},
 		toUp: function(){
 			
-			if(Board.isTileMoving){
+			//타일이 이동중이라면, 이벤트 무시
+			if(Board.eventWork == false){
 				return;
 			}
 			
+			Board.tileTodo.init();
+			
 			for(var x=0; x<Board.tileRowCnt; x++){
 				for(var y=0; y<Board.tileRowCnt; y++){
-					//타일이 존재 한다면
-					if(Board.tileArr[x][y] != null){
-						//위쪽이 벽이 아니고, 바로 위쪽에 타일이 없는 경우
-						if( y != 0 && !Board.existUpTile(x,y) ){
-							
-							var ex = x;
-							var ey = y-1;
-							
-							//이동할 곳을 좌표 지정
-							while(true){
-								if( ey == 0 || Board.existUpTile(ex,ey) ){
-									break;
-								}
-								ey--;
-							}
-							Util.moveTile(x,y,ex,ey);
-							
+	
+					//타일이 존재 하는가?
+					if(Board.tileArr[x][y] == null){
+						continue;
+					}
+					
+					//왼쪽이 벽인가?
+					if( y == 0 ){
+						var newTodo = Board.tileTodo.add(x, y, x, y);
+						continue;
+					}
+					
+					var ex = x;
+					var ey = y-1;
+
+					//이동할 곳을 좌표 지정
+					while(true){
+						
+						var todo = Board.tileTodo.getTodo(ex,ey);
+						
+						//이동할 가장 왼쪽자리에 타일이 없는 경우
+						if( ey == 0 && todo == null ){
+							Board.tileTodo.add(x, y, ex, ey); 
+							break;
 						}
+						
+						//이동할 곳에 타일이 있는 경우
+						if( todo != null ){
+							
+							//이동할 곳의 타일과 숫자가 같은 경우
+							if( Board.tileArr[x][y].number == todo.number ){
+								var newTodo = Board.tileTodo.add(x, y, ex, ey);
+								newTodo.number *= 2;
+								if(Board.tileArr[ex][ey] != null){
+									Board.tileArr[ex][ey].numberIncrease();
+								}
+								
+							//숫자가 다른 경우 && 가장 오른쪽이 아닌 경우
+							}else{
+								var _ey = ey+1;
+								_ey = _ey > Board.tileRowCnt-1 ? _ey-1 : _ey;
+								Board.tileTodo.add(x, y, ex, _ey);
+							}
+							break;
+						}
+						
+						ey--;
 					}
 				}
+				
 			}
+			 
+			Board.tileTodo.todo("UP");
+
 		},
 		toRight: function(){
 			
-			if(Board.isTileMoving){
+			//타일이 이동중이라면, 이벤트 무시
+			if(Board.eventWork == false){
 				return;
 			}
 			
+			Board.tileTodo.init();
+			
 			for(var x=Board.tileRowCnt-1; -1<x; x--){
-				for(var y=0; y<Board.tileRowCnt; y++){
-					//타일이 존재 한다면
-					if(Board.tileArr[x][y] != null){
-						//오른쪽이 벽이 아니고, 바로 오른쪽에 타일이 없는 경우
-						if( x != Board.tileRowCnt-1 && !Board.existRightTile(x,y) ){
-							
-							var ex = x+1;
-							var ey = y;
-							
-							//이동할 곳을 좌표 지정
-							while(true){
-								if( ex == Board.tileRowCnt-1 || Board.existRightTile(ex,ey) ){
-									break;
-								}
-								ex++;
-							}
-							Util.moveTile(x,y,ex,ey);
-							
+				for(var y=Board.tileRowCnt-1; -1<y; y--){
+	
+					//타일이 존재 하는가?
+					if(Board.tileArr[x][y] == null){
+						continue;
+					}
+					
+					//오른쪽이 벽인가?
+					if( x == Board.tileRowCnt-1 ){
+						var newTodo = Board.tileTodo.add(x, y, x, y);
+						continue;
+					}
+					
+					var ex = x+1;
+					var ey = y;
+
+					//이동할 곳을 좌표 지정
+					while(true){
+						
+						var todo = Board.tileTodo.getTodo(ex,ey);
+						
+						//이동할 가장 왼쪽자리에 타일이 없는 경우
+						if( ex == Board.tileRowCnt-1 && todo == null ){
+							Board.tileTodo.add(x, y, ex, ey); 
+							break;
 						}
+						
+						//이동할 곳에 타일이 있는 경우
+						if( todo != null ){
+							
+							//이동할 곳의 타일과 숫자가 같은 경우
+							if( Board.tileArr[x][y].number == todo.number ){
+								var newTodo = Board.tileTodo.add(x, y, ex, ey);
+								newTodo.number *= 2;
+								if(Board.tileArr[ex][ey] != null){
+									Board.tileArr[ex][ey].numberIncrease();
+								}
+								
+							//숫자가 다른 경우 && 가장 왼쪽이 아닌 경우
+							}else{
+								var _ex = ex-1;
+								_ex = _ex < 0 ? _ex+1 : _ex;
+								Board.tileTodo.add(x, y, _ex, ey);
+							}
+							break;
+						}
+						
+						ex++;
 					}
 				}
+				
 			}
+			
+			Board.tileTodo.todo("RIGHT");
 		},
 		toDown: function(){
 			
-			if(Board.isTileMoving){
+			//타일이 이동중이라면, 이벤트 무시
+			if(Board.eventWork == false){
 				return;
 			}
 			
-			for(var x=0; x<Board.tileRowCnt; x++){
+			Board.tileTodo.init();
+			
+			for(var x=Board.tileRowCnt-1; -1<x; x--){
 				for(var y=Board.tileRowCnt-1; -1<y; y--){
-					//타일이 존재 한다면
-					if(Board.tileArr[x][y] != null){
-						//아래쪽 벽이 아니고, 바로 아래쪽에 타일이 없는 경우
-						if( y != Board.tileRowCnt-1 && !Board.existDownTile(x,y) ){
-							
-							var ex = x;
-							var ey = y+1;
-							
-							//이동할 곳을 좌표 지정
-							while(true){
-								if( ey == Board.tileRowCnt-1 || Board.existDownTile(ex,ey) ){
-									break;
-								}
-								ey++;
-							}
-							Util.moveTile(x,y,ex,ey);
-							
+	
+					//타일이 존재 하는가?
+					if(Board.tileArr[x][y] == null){
+						continue;
+					}
+					
+					//왼쪽이 벽인가?
+					if( y == Board.tileRowCnt-1 ){
+						var newTodo = Board.tileTodo.add(x, y, x, y);
+						continue;
+					}
+					
+					var ex = x;
+					var ey = y+1;
+
+					//이동할 곳을 좌표 지정
+					while(true){
+						
+						var todo = Board.tileTodo.getTodo(ex,ey);
+						
+						//이동할 가장 왼쪽자리에 타일이 없는 경우
+						if( ey == Board.tileRowCnt-1 && todo == null ){
+							Board.tileTodo.add(x, y, ex, ey); 
+							break;
 						}
+						
+						//이동할 곳에 타일이 있는 경우
+						if( todo != null ){
+							
+							//이동할 곳의 타일과 숫자가 같은 경우
+							if( Board.tileArr[x][y].number == todo.number ){
+								var newTodo = Board.tileTodo.add(x, y, ex, ey);
+								newTodo.number *= 2;
+								if(Board.tileArr[ex][ey] != null){
+									Board.tileArr[ex][ey].numberIncrease();
+								}
+								
+							//숫자가 다른 경우 && 가장 오른쪽이 아닌 경우
+							}else{
+								var _ey = ey-1;
+								_ey = _ey < 0 ? _ey+1 : _ey;
+								Board.tileTodo.add(x, y, ex, _ey);
+							}
+							break;
+						}
+						
+						ey++;
 					}
 				}
+				
 			}
+			 
+			Board.tileTodo.todo("DOWN");
+
 		},
 		//리사이징
 		resize: function(){
@@ -495,7 +608,8 @@ var TF2048 = function(_canvas, _tileCnt, _option){
 					}
 				}
 			}
-		}
+		},
+		Board:Board
 	};
 	
 }
